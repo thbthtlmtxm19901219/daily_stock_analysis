@@ -22,6 +22,11 @@ on:
         required: false
         default: false
         type: boolean
+      custom_stocks:
+        description: '自定义股票代码（逗号分隔，留空则用STOCK_LIST）。例: 300308,600519,NVDA'
+        required: false
+        default: ''
+        type: string
 
 # 并发控制：同一时间只运行一个分析任务
 concurrency:
@@ -494,13 +499,20 @@ jobs:
             echo "⚡ 已启用强制运行模式（跳过交易日检查）"
           fi
 
+          # 构建自定义股票参数
+          CUSTOM_STOCKS_ARG=""
+          if [ -n "${{ github.event.inputs.custom_stocks }}" ]; then
+            CUSTOM_STOCKS_ARG="--stocks ${{ github.event.inputs.custom_stocks }}"
+            echo "🎯 使用自定义股票列表: ${{ github.event.inputs.custom_stocks }}"
+          fi
+
           # 执行分析
           if [ "$MODE" = "market-only" ]; then
             python main.py --market-review $FORCE_RUN_ARG
           elif [ "$MODE" = "stocks-only" ]; then
-            python main.py --no-market-review $FORCE_RUN_ARG
+            python main.py --no-market-review $FORCE_RUN_ARG $CUSTOM_STOCKS_ARG
           else
-            python main.py $FORCE_RUN_ARG
+            python main.py $FORCE_RUN_ARG $CUSTOM_STOCKS_ARG
           fi
       
       - name: 上传分析报告
